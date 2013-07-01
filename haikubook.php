@@ -13,6 +13,8 @@ define('NO_OF_SECTIONS', 5);
 define('PAGES_PER_SECTION', 3);
 define('HAIKU_PER_PAGE', 3);
 
+define('ENABLE_EXAIKSIS', false);
+
 define('MIN_SECTION_TITLE_LENGTH', 5);
 
 // Change this to the manuscript directory for the Leanpub book in Dropbox
@@ -22,6 +24,10 @@ define('OUTPUT_DIR', '/Users/graham/Dropbox/butterflies_and_sand/manuscript/');
 define('SRC_IMG_DIR', '/Users/graham/Pictures/Lightoom Exports/Butterflies and Sand/');
 // Directory to store images in for Leanpub
 define('LEANPUB_IMG_DIR', '/Users/graham/Dropbox/butterflies_and_sand/manuscript/images/');
+
+require_once('_inc/fns__poeet.php');
+require_once('_inc/fns__twitter_archive.php');
+require_once('_inc/fns__exaiksis.php');
 
 // list of chapters to insert before and after main content
 $pre_chapters = array(
@@ -38,7 +44,8 @@ $haiku_to_skip = array(
 	'Dusty tag chi shoes \/ a re-birth, the Great Tao makes \/ vacuum cleaner noise.',
 	'A baby laughing \/ contains more reality \/ than Radio 4.',
 	'{ dew like shadow lies \/ on the haven\'s waterfall \/ summer\'s strange disguise }',
-	'Catching my pale breath \/ A red leaf swings on the air \/ Caught in a cobweb\.'
+	'Catching my pale breath \/ A red leaf swings on the air \/ Caught in a cobweb\.',
+	'Last chance to catch the January haiku.*'
 );
 
 // Haiku to use as "last of the last" release - all haiku found after this will be listed in
@@ -46,12 +53,32 @@ $haiku_to_skip = array(
 // $last_haiku = 'Big garden, big house / A violent argument / with broken voices.';
 // $last_haiku = 'Sat in the window / a cooling cup of coffee / fills me with stories.';
 // $last_haiku = 'Watching the leaves shake / The wind outside the window / far from a sickbed.';
-$last_haiku = 'Carcasses and skin / tumbling from the stock pot / without flavour.';
+// $last_haiku = 'Carcasses and skin / tumbling from the stock pot / without flavour.';
+$last_haiku = 'Looking for comets / stepping through fallen leaves / among old rain clouds.';
 
 // Pages to scrape content from
 $haiku_pages = array(
 	'http://poeet.com/e/x/exmosis.html',
 	'http://poeet.com/6/l/6loss.html'
+);
+
+// source types can be:
+// - poeet: scrape a poeet URL page
+// - twitter_archive tweet archive
+$haiku_sources = array (
+	/*array(
+		'type' => 'poeet',
+		'location' => 'http://poeet.com/e/x/exmosis.html'
+	),
+	array(
+		'type' => 'poeet',
+		'location' => 'http://poeet.com/6/l/6loss.html'
+	),
+	*/
+	array(
+		'type' => 'twitter_archive_csv',
+		'location' => '/Users/graham/Downloads/tweets-20130630/tweets.csv'
+	),
 );
 
 // set up variables we're using
@@ -62,62 +89,95 @@ $section_titles = array();
 
 chdir(OUTPUT_DIR);
 
-// get page from poeet
 $page_i = 0;
 $in_recent = false;
 
-foreach ($haiku_pages as $page) {
+// Go through list of sources
+$src_i = 1;
+foreach ($haiku_sources as $source) {
 
-	$poeet = file_get_contents($page);
+	// Check type is set
+	if (! isset($source['type'])) {
+		echo "No source type found for source " + $src_i + ":\n";
+		print_r($source);
+		echo "Skipping.\n\n";
+		continue;
+	}
 
-	// Keep backup of scraped page
-	$f = fopen('last_poeet_content_' . $page_i++ . '.html', 'w');
-	fwrite($f, $poeet);
-	fclose($f);
+	// Final array to store this source's haiku in, ordered in forwards date order (ie. start at earliest)
+	$source_haiku_by_date = array();
 
-	// some dodgy split function
-	$poeet = preg_replace('/<\/div><div class="tweet">/', '±±±', $poeet);
+	switch($source['type']) {
 
-	if (preg_match('/<div class="tweet">([^<]+)<\/div>/', $poeet, $haiku_raw)) {
-
-		$haiku_all = explode('±±±', $haiku_raw[1]);
-
-
-		foreach ($haiku_all as $h) {
-
-			// skip blanks
-			if (! $h) {
+		case 'poeet':
+			// get page from poeet
+			if (! isset($source['location'])) {
+				echo "No location URL found for poeet, for source " + $src_i + " - skipping.\n\n";
 				continue;
 			}
+			$source_haiku_by_date = getPoeetHaiku($source['location']);
+			break;
 
-			$remove = false;
-			foreach ($haiku_to_skip as $hs) {
+		case 'twitter_archive_csv':
+			// Read CSV file in downloaded Twitter archive
+			if (! isset($source['location'])) {
+				echo "No file location found for Twitter archive CSV, for source " + $src_i + " - skipping.\n\n";
+				continue;
+			}
+			$source_haiku_by_date = getTwitterArchiveCsvHaiku($source['location']);
+			break;
+	}
 
-				if (preg_match('/' . $hs . '/', $h)) {
-					$remove = true;
-				}
+	// Skip if we got nothing back
+	if (! $source_haiku_by_date) {
+		continue;
+	}
 
+	// Only add non-blank haiku to our list
+	foreach ($source_haiku_by_date as $h) {
+		if (! trim($h)) {
+			$haiku[] = $h;
+		}
+
+		// Check which to skip
+		$remove = false;
+		foreach ($haiku_to_skip as $hs) {
+
+			if (preg_match('/' . $hs . '/', $h)) {
+				$remove = true;
 			}
 
-			if ($remove) {
-				echo "   Removed: " . $h . "\n";
-			} else {
-			
-				$haiku[] = $h;
+		}
 
-				if ($in_recent) {
-					$recent_haiku[] = $h;
-				}
+		if ($remove) {
+			echo "   Removed: " . $h . "\n";
+		} else {
+		
+			// Add to our complete list
+			$haiku[] = $h;
+
+			// Are we hitting "recent haiku" yet?
+			if ($in_recent) {
+				$recent_haiku[] = $h;
 			}
 
+			// Check for "latest" haiku now
 			if ($h == $last_haiku) {
 				$in_recent = true;
 			}
+
 		}
+
+
 	}
+
+	$src_i++;
+
 }
 
 
+echo "COMPLETE HAIKU LIST:\n";
+echo "====================\n\n";
 print_r($haiku);
 
 /** Finished with scraping content now - start randomerising everything **/
@@ -233,8 +293,8 @@ if ($haiku) {
 			$h = preg_replace('/\s*\/\s*/', "  \r\n", $rh);
 
 			$rh_count++;
-			if ($rh_count == 8) {
-				// Open new page after 7 haiku
+			if ($rh_count == 4) {
+				// Open new page after 3 haiku
 				fwrite($f, "\n{::pagebreak /}\n\n");
 				$rh_count = 1;
 				$rh_page++;
@@ -306,28 +366,13 @@ if ($haiku) {
 
 	$content_files[] = 'markov.txt';
 
+	if (ENABLE_EXAIKSIS) {
+		$exaiksis_file = generateExaiksis();
 
-	// Barnoid's Ex/Aik/Sis
-	echo "Ex / Aik / Sis:\n\n";
-
-	$exaiksis_url = 'http://subli.me.uk/cgi-bin/exaiksis';
-
-	$result = file_get_contents($exaiksis_url);
-
-	$result = preg_replace("/\n/", '', $result);
-	$result = preg_replace('/^.*by exmosis<\/a><\/div>/', '', $result);
-	$result = preg_replace('/^<div style="font-size: 30pt; margin-top: 50px;">/', '', trim($result));
-	$result = preg_replace('/<.*$/', '', $result);
-
-	$result = trim(preg_replace('/\s*\/\s*/', "  \r\n", $result));
-
-	echo $result . "\n\n";
-	$f = fopen('exaiksis.txt', 'w');
-	fwrite($f, '#Exaiksis' . "\n\n");
-	fwrite($f, $result);
-	fclose($f);
-
-	$content_files[] = 'exaiksis.txt';
+		if ($exaiksis_file) {
+			$content_files[] = $exaiksis_file;
+		}
+	}
 
 
 	// Insert post-content files
