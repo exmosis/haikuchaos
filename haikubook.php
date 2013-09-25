@@ -13,7 +13,7 @@ define('NO_OF_SECTIONS', 5);
 define('PAGES_PER_SECTION', 3);
 define('HAIKU_PER_PAGE', 3);
 
-define('ENABLE_EXAIKSIS', false);
+define('ENABLE_EXAIKSIS', true);
 
 define('MIN_SECTION_TITLE_LENGTH', 5);
 
@@ -54,7 +54,8 @@ $haiku_to_skip = array(
 // $last_haiku = 'Sat in the window / a cooling cup of coffee / fills me with stories.';
 // $last_haiku = 'Watching the leaves shake / The wind outside the window / far from a sickbed.';
 // $last_haiku = 'Carcasses and skin / tumbling from the stock pot / without flavour.';
-$last_haiku = 'Looking for comets / stepping through fallen leaves / among old rain clouds.';
+// $last_haiku = 'Looking for comets / stepping through fallen leaves / among old rain clouds.';
+$last_haiku = 'The hairs on my arm / among the rose garden plants / wanders a greenfly.';
 
 // Pages to scrape content from
 $haiku_pages = array(
@@ -77,7 +78,7 @@ $haiku_sources = array (
 	*/
 	array(
 		'type' => 'twitter_archive_csv',
-		'location' => '/Users/graham/Downloads/tweets-20130630/tweets.csv'
+		'location' => '/Users/graham/Downloads/tweets-20130925/tweets.csv'
 	),
 );
 
@@ -98,7 +99,7 @@ foreach ($haiku_sources as $source) {
 
 	// Check type is set
 	if (! isset($source['type'])) {
-		echo "No source type found for source " + $src_i + ":\n";
+		echo "No source type found for source " . $src_i . ":\n";
 		print_r($source);
 		echo "Skipping.\n\n";
 		continue;
@@ -112,7 +113,7 @@ foreach ($haiku_sources as $source) {
 		case 'poeet':
 			// get page from poeet
 			if (! isset($source['location'])) {
-				echo "No location URL found for poeet, for source " + $src_i + " - skipping.\n\n";
+				echo "No location URL found for poeet, for source " . $src_i . " - skipping.\n\n";
 				continue;
 			}
 			$source_haiku_by_date = getPoeetHaiku($source['location']);
@@ -121,7 +122,7 @@ foreach ($haiku_sources as $source) {
 		case 'twitter_archive_csv':
 			// Read CSV file in downloaded Twitter archive
 			if (! isset($source['location'])) {
-				echo "No file location found for Twitter archive CSV, for source " + $src_i + " - skipping.\n\n";
+				echo "No file location found for Twitter archive CSV, for source " . $src_i . " - skipping.\n\n";
 				continue;
 			}
 			$source_haiku_by_date = getTwitterArchiveCsvHaiku($source['location']);
@@ -130,6 +131,8 @@ foreach ($haiku_sources as $source) {
 
 	// Skip if we got nothing back
 	if (! $source_haiku_by_date) {
+		echo "No haiku found for source " . $src_i . ":\n";
+		print_r($source);
 		continue;
 	}
 
