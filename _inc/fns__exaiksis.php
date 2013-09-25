@@ -14,8 +14,9 @@ function generateExaiksis() {
 	$result = file_get_contents($exaiksis_url);
 
 	$result = preg_replace("/\n/", '', $result);
-	$result = preg_replace('/^.*by exmosis<\/a><\/div>/', '', $result);
-	$result = preg_replace('/^<div style="font-size: 30pt; margin-top: 50px;">/', '', trim($result));
+	$result = preg_replace('/^.*<div id="haiku">/', '', $result);
+	$result = preg_replace('/<\/p>/', "\n", trim($result));
+	$result = preg_replace('/<p>/', '', trim($result));
 	$result = preg_replace('/<.*$/', '', $result);
 
 	$result = trim(preg_replace('/\s*\/\s*/', "  \r\n", $result));
