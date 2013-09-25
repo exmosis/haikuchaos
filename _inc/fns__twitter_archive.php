@@ -17,7 +17,8 @@ function getTwitterArchiveCsvHaiku($file) {
 	if (($handle = fopen($file, "r")) !== FALSE) {
     	while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
         	if (count($data) >= 8) {
-        		$h = $data[7]; // column H, correct as of 2013-06-30
+
+        		$h = $data[5]; // column F, updated as of 2013-09-25
 
         		if (preg_match('/#haiku/', $h)) {
 
@@ -28,7 +29,9 @@ function getTwitterArchiveCsvHaiku($file) {
         			}
 
         		}
-        	}
+        	} else {
+                echo "No data returned from Twitter CSV file? - skipping.\n\n";
+            }
         }
 
         // Reverse haiku
