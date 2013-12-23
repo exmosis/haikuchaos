@@ -52,13 +52,13 @@ function poeeterise($tweet) {
 
 	// Checks from poeet scraper
 	if (preg_match("/^(\@|RT)/", $tweet) ||			// skip directed tweets and RTs
-		preg_match("/(\@|http:\/\/)/", $tweet) 	// skip tweets with @ or haiku in
+		preg_match("/(\@|https?:)/", $tweet) 	// skip tweets with @ or haiku in
 	    // preg_match("/[\/\~].*[\/\~]/", $tweet)		// ?
 	) {
 		return null;
 	}
 
-    $tweet = preg_replace("/[\/\~]+/", ' / ', $tweet);;
+    $tweet = preg_replace("/[\/\~\n]+/", ' / ', $tweet);;
     $tweet = preg_replace("/^[\s\/]+/", '', $tweet);
     $tweet = preg_replace("/(\/.*?\/.*?)\/.*/", "$1", $tweet);
     $tweet = preg_replace("/^.*\#haiku:\s*(.*)$/", "$1", $tweet);
