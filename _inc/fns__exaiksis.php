@@ -15,7 +15,7 @@ function generateExaiksis() {
 
 	$result = preg_replace("/\n/", '', $result);
 	$result = preg_replace('/^.*<div id="haiku">/', '', $result);
-	$result = preg_replace('/<\/p>/', "\n", trim($result));
+	$result = preg_replace('/<\/p>/', "  \r\n", trim($result));
 	$result = preg_replace('/<p>/', '', trim($result));
 	$result = preg_replace('/<.*$/', '', $result);
 
