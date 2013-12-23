@@ -13,6 +13,7 @@ define('NO_OF_SECTIONS', 5);
 define('PAGES_PER_SECTION', 3);
 define('HAIKU_PER_PAGE', 3);
 
+define('ENABLE_IMAGES', true);
 define('ENABLE_EXAIKSIS', true);
 
 define('MIN_SECTION_TITLE_LENGTH', 5);
@@ -36,6 +37,7 @@ $pre_chapters = array(
 );
 
 $post_chapters = array(
+	'on_syllables.txt',
 	'thanks.txt'
 );
 
@@ -55,7 +57,8 @@ $haiku_to_skip = array(
 // $last_haiku = 'Watching the leaves shake / The wind outside the window / far from a sickbed.';
 // $last_haiku = 'Carcasses and skin / tumbling from the stock pot / without flavour.';
 // $last_haiku = 'Looking for comets / stepping through fallen leaves / among old rain clouds.';
-$last_haiku = 'The hairs on my arm / among the rose garden plants / wanders a greenfly.';
+// $last_haiku = 'The hairs on my arm / among the rose garden plants / wanders a greenfly.';
+$last_haiku = "After the showers / the hitchhikers' cardboard sign / in the recycling.";
 
 // Pages to scrape content from
 $haiku_pages = array(
@@ -78,7 +81,7 @@ $haiku_sources = array (
 	*/
 	array(
 		'type' => 'twitter_archive_csv',
-		'location' => '/Users/graham/Downloads/tweets-20130925/tweets.csv'
+		'location' => '/Users/graham/Archive/Backups/tweets_2013-12-22/tweets.csv'
 	),
 );
 
@@ -235,7 +238,9 @@ if ($haiku) {
 		if (count($possible_titles) > $section_i) {
 			$f = fopen($section_i . '_0_title.txt', 'w');
 			fwrite($f, '#' . $possible_titles[$section_i] . "\n");
-			fwrite($f, $images->addRandomImage() . "\n");
+			if (ENABLE_IMAGES) {
+				fwrite($f, $images->addRandomImage() . "\n");
+			}
 			fclose($f);
 			$content_files[] = 'section' . $section_i . ':';
 			$content_files[] = $section_i . '_0_title.txt';
@@ -312,7 +317,9 @@ if ($haiku) {
 		fclose($f);
 	}
 
-	$images->addRandomImage();
+	if (ENABLE_IMAGES) {
+		$images->addRandomImage();
+	}
 
 	// Markov text
 	echo "Markov:\n\n";
@@ -384,7 +391,9 @@ if ($haiku) {
 	}
 
 	// Final image
-	$images->addRandomImage();
+	if (ENABLE_IMAGES) {
+		$images->addRandomImage();
+	}
 
 	// Now write out content list
 	$f = fopen('Book.txt', 'w');
